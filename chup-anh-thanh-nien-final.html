@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<title>Chụp ảnh thanh niên</title>
+<style>
+  :root {
+    --bg: #0d1117;
+    --panel: #161b26;
+    --panel-border: #262e40;
+    --field: #0f1420;
+    --field-border: #2a3348;
+    --text: #dbe2ef;
+    --muted: #8592ab;
+    --label: #7c8db5;
+    --accent: #3b82f6;
+    --accent2: #7c5cf0;
+    --danger: #f87171;
+    --save-a: #10b981;
+    --save-b: #0d9488;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, "Segoe UI", Roboto, system-ui, sans-serif;
+    max-width: 1040px;
+    margin: 0 auto;
+    padding: 28px 16px 60px;
+    background: var(--bg);
+    color: var(--text);
+  }
+  h1.app-title {
+    text-align: center;
+    font-size: 20px;
+    letter-spacing: 0.5px;
+    color: var(--text);
+    margin: 0 0 24px;
+    font-weight: 700;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+  @media (max-width: 800px) {
+    .grid { grid-template-columns: 1fr; }
+  }
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--panel-border);
+    border-radius: 14px;
+    padding: 20px;
+  }
+  .panel-title {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 1.2px;
+    color: var(--label);
+    text-transform: uppercase;
+    margin: 0 0 14px;
+  }
+  .panel-title.section-gap { margin-top: 26px; }
+  .cam-row { display: flex; gap: 8px; margin-bottom: 10px; }
+  select, input {
+    width: 100%;
+    background: var(--field);
+    border: 1px solid var(--field-border);
+    color: var(--text);
+    padding: 10px 12px;
+    border-radius: 8px;
+    font-size: 14px;
+    outline: none;
+  }
+  select:focus, input:focus { border-color: var(--accent); }
+  input::placeholder { color: #56617a; }
+  .icon-btn {
+    flex-shrink: 0;
+    width: 40px;
+    background: var(--field);
+    border: 1px solid var(--field-border);
+    color: var(--text);
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 16px;
+  }
+  .icon-btn:hover { border-color: var(--accent); }
+  .status-line { font-size: 12.5px; color: var(--muted); margin: 6px 0 12px; min-height: 16px; }
+  .status-line.warn { color: var(--danger); }
+  .status-line.ok { color: #34d399; }
+  .video-wrap {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 3/4;
+    background: #05070d;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid var(--field-border);
+    margin-bottom: 14px;
+  }
+  video { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .grid-overlay {
+    position: absolute; inset: 0; pointer-events: none;
+    background-image:
+      linear-gradient(to right, transparent calc(33.33% - 1px), rgba(59,130,246,0.35) calc(33.33% - 1px), rgba(59,130,246,0.35) 33.33%, transparent 33.33%),
+      linear-gradient(to right, transparent calc(66.66% - 1px), rgba(59,130,246,0.35) calc(66.66% - 1px), rgba(59,130,246,0.35) 66.66%, transparent 66.66%),
+      linear-gradient(to bottom, transparent calc(33.33% - 1px), rgba(59,130,246,0.35) calc(33.33% - 1px), rgba(59,130,246,0.35) 33.33%, transparent 33.33%),
+      linear-gradient(to bottom, transparent calc(66.66% - 1px), rgba(59,130,246,0.35) calc(66.66% - 1px), rgba(59,130,246,0.35) 66.66%, transparent 66.66%);
+  }
+  .corner {
+    position: absolute; width: 18px; height: 18px;
+    border-color: #60a5fa; border-style: solid; border-width: 0;
+    pointer-events: none; opacity: 0.9;
+  }
+  .corner.tl { top: 8px; left: 8px; border-top-width: 2px; border-left-width: 2px; border-top-left-radius: 4px; }
+  .corner.tr { top: 8px; right: 8px; border-top-width: 2px; border-right-width: 2px; border-top-right-radius: 4px; }
+  .corner.bl { bottom: 8px; left: 8px; border-bottom-width: 2px; border-left-width: 2px; border-bottom-left-radius: 4px; }
+  .corner.br { bottom: 8px; right: 8px; border-bottom-width: 2px; border-right-width: 2px; border-bottom-right-radius: 4px; }
+  .cam-placeholder {
+    position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+    flex-direction: column; gap: 8px; color: var(--muted); font-size: 13px; text-align: center; padding: 0 20px;
+    background: #05070d;
+  }
+  .cam-placeholder svg { opacity: 0.5; }
+  .field-label { display: block; font-size: 13px; font-weight: 600; color: var(--text); margin: 12px 0 6px; }
+  .btn-row { display: flex; gap: 10px; margin-top: 16px; }
+  .btn {
+    flex: 1; padding: 12px 14px; border-radius: 9px; border: none; cursor: pointer;
+    font-size: 14.5px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 6px;
+    transition: opacity .15s, transform .05s;
+  }
+  .btn:active { transform: scale(0.98); }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn-secondary { background: var(--field); border: 1px solid var(--field-border); color: var(--text); }
+  .btn-secondary:hover:not(:disabled) { border-color: var(--accent); }
+  .btn-primary { background: linear-gradient(135deg, var(--accent), var(--accent2)); color: #fff; }
+  .btn-save { background: linear-gradient(135deg, var(--save-a), var(--save-b)); color: #fff; }
+  .btn-save:hover:not(:disabled), .btn-primary:hover:not(:disabled) { filter: brightness(1.08); }
+  .preview-box {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 3/4;
+    background: var(--field);
+    border: 1px solid var(--field-border);
+    border-radius: 10px;
+    overflow: hidden;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .preview-box img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .preview-placeholder { text-align: center; color: var(--muted); font-size: 13px; }
+  .preview-placeholder svg { opacity: 0.4; margin-bottom: 8px; }
+  .hidden { display: none !important; }
+  .filename-preview {
+    background: var(--field); border: 1px solid var(--field-border); border-radius: 8px;
+    padding: 10px 12px; font-size: 13px; color: var(--muted); font-family: ui-monospace, monospace;
+    margin-bottom: 10px; word-break: break-all;
+  }
+  .filename-preview b { color: var(--text); font-weight: 600; }
+  .hint { font-size: 12px; color: var(--muted); margin-top: 10px; text-align: center; }
+  .hint i { color: #a5b4c9; font-style: italic; }
+  .log-panel { margin-top: 20px; }
+  #log { font-size: 13px; max-height: 160px; overflow: auto; }
+  #log div { padding: 7px 0; border-bottom: 1px solid var(--panel-border); color: var(--muted); }
+  #log div:last-child { border-bottom: none; }
+  #log:empty::before { content: 'Chưa có ảnh nào được lưu.'; color: var(--muted); font-size: 13px; }
+</style>
+</head>
+<body>
+
+<h1 class="app-title">CHỤP ẢNH THANH NIÊN</h1>
+
+<div class="grid">
+
+  <div class="panel">
+    <div class="panel-title">Thiết bị camera</div>
+    <div class="cam-row">
+      <select id="cameraSelect"><option value="">— Chọn camera —</option></select>
+      <button class="icon-btn" id="refreshCamBtn" title="Làm mới danh sách camera">⟳</button>
+    </div>
+    <div class="status-line" id="camStatus">Đang bật webcam...</div>
+
+    <div class="video-wrap">
+      <video id="video" autoplay playsinline muted></video>
+      <div class="grid-overlay"></div>
+      <div class="corner tl"></div><div class="corner tr"></div>
+      <div class="corner bl"></div><div class="corner br"></div>
+    </div>
+
+    <label class="field-label">Phông nền</label>
+    <select id="bgSelect">
+      <option value="none">Giữ nguyên nền thật</option>
+      <option value="#0033A0" selected>Nền xanh dương (ảnh thẻ)</option>
+      <option value="#00B140">Nền xanh lá</option>
+      <option value="#FFFFFF">Nền trắng</option>
+    </select>
+    <div class="status-line" id="modelStatus">Đang tải mô hình tách nền...</div>
+
+    <div class="btn-row">
+      <button class="btn btn-secondary" id="retakeBtn" disabled>↺ Chụp lại</button>
+      <button class="btn btn-primary" id="captureBtn" disabled>📷 Chụp ảnh</button>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-title">Ảnh đã chụp</div>
+    <div class="preview-box" id="previewBox">
+      <div class="preview-placeholder" id="previewPlaceholder">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="12" cy="12" r="3.5"/><path d="M8 5l1.5-2h5L16 5"/></svg>
+        <div>Ảnh hiển thị sau khi chụp</div>
+      </div>
+      <img id="preview" class="hidden">
+    </div>
+
+    <div class="panel-title section-gap">Thông tin cá nhân</div>
+    <label class="field-label">Họ và tên</label>
+    <input id="hoten" placeholder="Nguyễn Văn A">
+    <label class="field-label">Ngày tháng năm sinh</label>
+    <input id="ngaysinh" type="date">
+    <input id="namsinh" type="hidden">
+
+    <div class="panel-title section-gap">Lưu file</div>
+    <div class="filename-preview" id="filenamePreview">Tên file: <b>—</b></div>
+    <div class="status-line" id="folderStatus">Chưa chọn thư mục lưu.</div>
+    <div class="btn-row">
+      <button class="btn btn-secondary" id="chooseFolderBtn">📁 Chọn thư mục</button>
+      <button class="btn btn-save" id="saveBtn">💾 Lưu vào thư mục...</button>
+    </div>
+    <div class="hint">Định dạng tên: <i>năm sinh – họ tên – ngày-tháng-năm</i></div>
+    <div class="status-line" id="saveStatus"></div>
+  </div>
+
+</div>
+
+<div class="panel log-panel">
+  <div class="panel-title">Đã lưu trong phiên này</div>
+  <div id="log"></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.11.0/dist/tf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/body-pix@2.0.5/dist/body-pix.min.js"></script>
+<script>
+let dirHandle = null;
+let currentBlob = null;
+let bodyPixNet = null;
+let currentStream = null;
+
+const video = document.getElementById('video');
+const cameraSelect = document.getElementById('cameraSelect');
+const refreshCamBtn = document.getElementById('refreshCamBtn');
+const captureBtn = document.getElementById('captureBtn');
+const retakeBtn = document.getElementById('retakeBtn');
+const camStatus = document.getElementById('camStatus');
+const modelStatus = document.getElementById('modelStatus');
+const bgSelect = document.getElementById('bgSelect');
+const folderStatus = document.getElementById('folderStatus');
+const chooseFolderBtn = document.getElementById('chooseFolderBtn');
+const previewBox = document.getElementById('previewBox');
+const previewPlaceholder = document.getElementById('previewPlaceholder');
+const preview = document.getElementById('preview');
+const saveBtn = document.getElementById('saveBtn');
+const saveStatus = document.getElementById('saveStatus');
+const ngaysinh = document.getElementById('ngaysinh');
+const namsinh = document.getElementById('namsinh');
+const hoten = document.getElementById('hoten');
+const filenamePreview = document.getElementById('filenamePreview');
+const log = document.getElementById('log');
+
+const supportsFS = 'showDirectoryPicker' in window;
+
+// ---------- Model tách nền ----------
+bodyPix.load({
+  architecture: 'MobileNetV1',
+  outputStride: 16,
+  multiplier: 0.75,
+  quantBytes: 2
+}).then(net => {
+  bodyPixNet = net;
+  modelStatus.textContent = 'Mô hình tách nền đã sẵn sàng.';
+  modelStatus.className = 'status-line ok';
+}).catch(() => {
+  modelStatus.textContent = 'Không tải được mô hình tách nền (cần internet lúc mở lần đầu).';
+  modelStatus.className = 'status-line warn';
+});
+
+// ---------- Camera ----------
+async function startCamera(deviceId) {
+  if (currentStream) {
+    currentStream.getTracks().forEach(t => t.stop());
+  }
+  const constraints = {
+    video: deviceId ? { deviceId: { exact: deviceId }, width: 720, height: 960 } : { width: 720, height: 960 }
+  };
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia(constraints);
+    currentStream = stream;
+    video.srcObject = stream;
+    camStatus.textContent = 'Webcam sẵn sàng.';
+    camStatus.className = 'status-line ok';
+    captureBtn.disabled = false;
+    await listCameras();
+  } catch (err) {
+    camStatus.textContent = 'Không mở được webcam: ' + err.message;
+    camStatus.className = 'status-line warn';
+  }
+}
+
+async function listCameras() {
+  try {
+    const devices = await navigator.mediaDevices.enumerateDevices();
+    const cams = devices.filter(d => d.kind === 'videoinput');
+    const prevValue = cameraSelect.value;
+    cameraSelect.innerHTML = '<option value="">— Chọn camera —</option>';
+    cams.forEach((cam, i) => {
+      const opt = document.createElement('option');
+      opt.value = cam.deviceId;
+      opt.textContent = cam.label || `Camera ${i + 1}`;
+      cameraSelect.appendChild(opt);
+    });
+    if (cams.some(c => c.deviceId === prevValue)) cameraSelect.value = prevValue;
+  } catch (e) {}
+}
+
+cameraSelect.addEventListener('change', () => {
+  if (cameraSelect.value) startCamera(cameraSelect.value);
+});
+refreshCamBtn.addEventListener('click', () => listCameras());
+
+startCamera(null);
+
+// ---------- Ngày sinh / năm sinh / tên file preview ----------
+function slug(s) {
+  return s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/gi,'d')
+    .replace(/[^a-zA-Z0-9]+/g,'_').replace(/^_+|_+$/g,'');
+}
+function toAsciiUpper(s) {
+  return s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/gi,'D').replace(/Đ/g,'D')
+    .toUpperCase().replace(/\s+/g,' ').trim();
+}
+function currentFilename() {
+  const ht = hoten.value.trim();
+  const ng = ngaysinh.value;
+  if (!ht || !ng) return null;
+  const [yyyy, mm, dd] = ng.split('-');
+  return `${yyyy} - ${toAsciiUpper(ht)} - ${dd}-${mm}-${yyyy}.jpg`;
+}
+function updateFilenamePreview() {
+  const name = currentFilename();
+  filenamePreview.innerHTML = 'Tên file: <b>' + (name || '—') + '</b>';
+}
+ngaysinh.addEventListener('change', () => {
+  namsinh.value = ngaysinh.value ? ngaysinh.value.split('-')[0] : '';
+  updateFilenamePreview();
+});
+hoten.addEventListener('input', updateFilenamePreview);
+
+// ---------- Chọn thư mục ----------
+chooseFolderBtn.addEventListener('click', async () => {
+  if (!supportsFS) {
+    folderStatus.textContent = 'Trình duyệt này không hỗ trợ chọn thư mục tự động (dùng Chrome hoặc Edge). Ảnh sẽ được tải xuống thủ công thay thế.';
+    folderStatus.className = 'status-line warn';
+    return;
+  }
+  try {
+    dirHandle = await window.showDirectoryPicker();
+    folderStatus.textContent = 'Đã chọn thư mục: ' + dirHandle.name;
+    folderStatus.className = 'status-line ok';
+  } catch (e) {
+    folderStatus.textContent = 'Chưa chọn thư mục.';
+    folderStatus.className = 'status-line';
+  }
+});
+
+// ---------- Chụp ảnh ----------
+captureBtn.addEventListener('click', async () => {
+  const vw = video.videoWidth;
+  const vh = video.videoHeight;
+  const targetRatio = 3 / 4;
+  let sx, sy, sw, sh;
+  if (vw / vh > targetRatio) {
+    sh = vh; sw = vh * targetRatio; sx = (vw - sw) / 2; sy = 0;
+  } else {
+    sw = vw; sh = vw / targetRatio; sx = 0; sy = (vh - sh) / 2;
+  }
+  const canvas = document.createElement('canvas');
+  canvas.width = 720;
+  canvas.height = 960;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(video, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
+
+  const bgColor = bgSelect.value;
+
+  if (bgColor !== 'none' && bodyPixNet) {
+    captureBtn.disabled = true;
+    camStatus.textContent = 'Đang tách nền, vui lòng chờ...';
+    camStatus.className = 'status-line';
+    try {
+      const segmentation = await bodyPixNet.segmentPerson(canvas, {
+        internalResolution: 'medium',
+        segmentationThreshold: 0.7
+      });
+      const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const pixels = imgData.data;
+      for (let i = 0; i < segmentation.data.length; i++) {
+        if (segmentation.data[i] === 0) {
+          const off = i * 4;
+          pixels[off] = parseInt(bgColor.substr(1,2), 16);
+          pixels[off+1] = parseInt(bgColor.substr(3,2), 16);
+          pixels[off+2] = parseInt(bgColor.substr(5,2), 16);
+        }
+      }
+      ctx.putImageData(imgData, 0, 0);
+    } catch (e) {
+      camStatus.textContent = 'Không tách được nền, dùng ảnh gốc.';
+      camStatus.className = 'status-line warn';
+    }
+    captureBtn.disabled = false;
+    camStatus.textContent = 'Webcam sẵn sàng.';
+    camStatus.className = 'status-line ok';
+  }
+
+  canvas.toBlob(blob => {
+    currentBlob = blob;
+    preview.src = URL.createObjectURL(blob);
+    preview.classList.remove('hidden');
+    previewPlaceholder.classList.add('hidden');
+    retakeBtn.disabled = false;
+    saveStatus.textContent = '';
+  }, 'image/jpeg', 0.92);
+});
+
+retakeBtn.addEventListener('click', () => {
+  currentBlob = null;
+  preview.classList.add('hidden');
+  previewPlaceholder.classList.remove('hidden');
+  retakeBtn.disabled = true;
+  saveStatus.textContent = '';
+});
+
+// ---------- Lưu file ----------
+saveBtn.addEventListener('click', async () => {
+  const hotenVal = hoten.value.trim();
+  const ngay = ngaysinh.value;
+  const nam = namsinh.value;
+  if (!hotenVal || !ngay) {
+    saveStatus.textContent = 'Vui lòng nhập đầy đủ họ tên và ngày sinh.';
+    saveStatus.className = 'status-line warn';
+    return;
+  }
+  if (!currentBlob) {
+    saveStatus.textContent = 'Chưa có ảnh, hãy chụp ảnh trước.';
+    saveStatus.className = 'status-line warn';
+    return;
+  }
+  const [yyyy, mm, dd] = ngay.split('-');
+  const ngayVN = `${dd}-${mm}-${yyyy}`;
+  const filenameBase = `${nam} - ${toAsciiUpper(hotenVal)} - ${ngayVN}`;
+  const imgName = filenameBase + '.jpg';
+
+  try {
+    if (dirHandle) {
+      const fileHandle = await dirHandle.getFileHandle(imgName, { create: true });
+      const writable = await fileHandle.createWritable();
+      await writable.write(currentBlob);
+      await writable.close();
+
+      const csvLine = `"${hotenVal}","${ngay}","${nam}","${imgName}"\n`;
+      let csvHandle;
+      try {
+        csvHandle = await dirHandle.getFileHandle('danh_sach.csv', { create: true });
+      } catch(e) {}
+      const existing = await csvHandle.getFile();
+      let existingText = await existing.text();
+      if (!existingText) existingText = 'Ho ten,Ngay sinh,Nam sinh,Ten file anh\n';
+      const w = await csvHandle.createWritable();
+      await w.write(existingText + csvLine);
+      await w.close();
+
+      saveStatus.textContent = 'Đã lưu: ' + imgName;
+      saveStatus.className = 'status-line ok';
+    } else {
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(currentBlob);
+      a.download = imgName;
+      a.click();
+      saveStatus.textContent = 'Đã tải xuống: ' + imgName + ' (chưa chọn thư mục nên tải về mục Downloads).';
+      saveStatus.className = 'status-line warn';
+    }
+    const entry = document.createElement('div');
+    entry.textContent = `${hotenVal} — ${ngay} — ${imgName}`;
+    log.prepend(entry);
+
+    preview.classList.add('hidden');
+    previewPlaceholder.classList.remove('hidden');
+    retakeBtn.disabled = true;
+    hoten.value = '';
+    ngaysinh.value = '';
+    namsinh.value = '';
+    currentBlob = null;
+    updateFilenamePreview();
+  } catch (e) {
+    saveStatus.textContent = 'Lỗi khi lưu: ' + e.message;
+    saveStatus.className = 'status-line warn';
+  }
+});
+</script>
+</body>
+</html>
