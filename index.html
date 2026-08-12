@@ -306,6 +306,59 @@ const log = document.getElementById('log');
 
 const supportsFS = 'showDirectoryPicker' in window;
 
+// ---------- Lưu/đọc thư mục đã chọn (IndexedDB) để không phải chọn lại mỗi lần F5 ----------
+const IDB_NAME = 'chupanh_store';
+const IDB_STORE = 'handles';
+const IDB_KEY = 'dirHandle';
+
+function idbOpen() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(IDB_NAME, 1);
+    req.onupgradeneeded = () => req.result.createObjectStore(IDB_STORE);
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+async function idbSetHandle(handle) {
+  const db = await idbOpen();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(IDB_STORE, 'readwrite');
+    tx.objectStore(IDB_STORE).put(handle, IDB_KEY);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+async function idbGetHandle() {
+  const db = await idbOpen();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(IDB_STORE, 'readonly');
+    const req = tx.objectStore(IDB_STORE).get(IDB_KEY);
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function tryRestoreFolder() {
+  if (!supportsFS) return;
+  try {
+    const handle = await idbGetHandle();
+    if (!handle) return;
+    const opts = { mode: 'readwrite' };
+    let perm = await handle.queryPermission(opts);
+    if (perm !== 'granted') {
+      perm = await handle.requestPermission(opts);
+    }
+    if (perm === 'granted') {
+      dirHandle = handle;
+      folderStatus.textContent = 'Đã chọn thư mục: ' + dirHandle.name;
+      folderStatus.className = 'status-line ok';
+    }
+  } catch (e) {
+    // thư mục có thể đã bị xoá/đổi tên, hoặc chưa từng lưu -> bỏ qua, người dùng chọn lại
+  }
+}
+tryRestoreFolder();
+
 // ---------- Model tách nền ----------
 bodyPix.load({
   architecture: 'MobileNetV1',
@@ -403,6 +456,7 @@ chooseFolderBtn.addEventListener('click', async () => {
     dirHandle = await window.showDirectoryPicker();
     folderStatus.textContent = 'Đã chọn thư mục: ' + dirHandle.name;
     folderStatus.className = 'status-line ok';
+    idbSetHandle(dirHandle).catch(() => {});
   } catch (e) {
     folderStatus.textContent = 'Chưa chọn thư mục.';
     folderStatus.className = 'status-line';
